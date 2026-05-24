@@ -1,0 +1,35 @@
+{
+  "name": "@activepieces/piece-virtualsms",
+  "version": "0.1.0",
+  "description": "Activepieces piece for VirtualSMS — real-SIM SMS verification across 145+ countries and 2,500+ services. Buy disposable phone numbers, receive OTP codes via webhook or polling, manage rentals.",
+  "license": "MIT",
+  "homepage": "https://virtualsms.io",
+  "author": "VirtualSMS <dev@virtualsms.io>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/virtualsms-io/automation-integrations.git",
+    "directory": "packages/activepieces-piece"
+  },
+  "keywords": ["activepieces", "sms", "verification", "otp", "virtualsms"],
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "clean": "rimraf dist",
+    "test": "echo \"(no tests yet)\" && exit 0"
+  },
+  "peerDependencies": {
+    "@activepieces/pieces-framework": "*",
+    "@activepieces/pieces-common": "*"
+  },
+  "devDependencies": {
+    "@activepieces/pieces-common": "*",
+    "@activepieces/pieces-framework": "*",
+    "rimraf": "^5.0.5",
+    "typescript": "^5.4.5"
+  },
+  "engines": {
+    "node": ">=18.10.0"
+  }
+}

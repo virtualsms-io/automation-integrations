@@ -1,0 +1,23 @@
+{
+  "name": "@virtualsms/api-client",
+  "version": "0.1.0",
+  "description": "Shared TypeScript REST client for VirtualSMS automation integrations (n8n, Activepieces, Zapier).",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": ["dist", "README.md"],
+  "license": "MIT",
+  "author": "VirtualSMS <dev@virtualsms.io>",
+  "homepage": "https://virtualsms.io",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "clean": "rimraf dist",
+    "test": "echo \"(no tests yet)\" && exit 0"
+  },
+  "devDependencies": {
+    "rimraf": "^5.0.5",
+    "typescript": "^5.4.5"
+  },
+  "engines": {
+    "node": ">=18.10.0"
+  }
+}

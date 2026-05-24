@@ -1,0 +1,28 @@
+node_modules/
+dist/
+build/
+*.tsbuildinfo
+
+# secrets / credentials
+.env
+.env.*
+!.env.example
+.zapierapprc
+.npmrc
+*.pem
+*.key.pem
+*.p12
+secrets/
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.log
+*.swp
+
+# coverage / worktrees
+coverage/
+.worktrees/
+

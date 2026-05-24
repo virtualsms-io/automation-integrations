@@ -1,0 +1,27 @@
+{
+  "name": "virtualsms-automation-integrations",
+  "version": "0.1.0",
+  "private": true,
+  "description": "VirtualSMS integrations for Zapier, n8n, and Activepieces. Shared TypeScript API client + per-platform packages.",
+  "license": "MIT",
+  "author": "VirtualSMS <dev@virtualsms.io>",
+  "homepage": "https://virtualsms.io",
+  "workspaces": [
+    "packages/api-client",
+    "packages/n8n-node",
+    "packages/activepieces-piece",
+    "packages/zapier-app"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "clean": "npm run clean --workspaces --if-present"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5"
+  },
+  "engines": {
+    "node": ">=18.10.0"
+  }
+}
