@@ -1,0 +1,424 @@
+openapi: 3.0.3
+info:
+  title: VirtualSMS API
+  description: |
+    Real-SIM SMS verification API. Buy disposable phone numbers across 145+
+    countries and 2,500+ services to receive OTP codes for AI agents,
+    automation workflows, account creation flows, and signup verification.
+
+    All endpoints under `/api/v1/customer/*` require the `X-API-Key` header.
+    Get a key at https://virtualsms.io → Settings → API Keys.
+
+    Key behaviors:
+    - Service codes are short codes (`wa` = WhatsApp, `tg` = Telegram), not slugs. Use `GET /api/v1/customer/services` to discover.
+    - Countries are ISO 2-letter codes (US, GB, DE, AR).
+    - Orders move through states: `waiting` → (`completed` on SMS arrival | `expired` on timeout | `cancelled` on manual cancel).
+    - Cancel inside a 120-second cooldown after purchase returns HTTP 425.
+    - Cancel after cooldown returns a full refund if order is still `waiting`.
+  version: 1.0.0
+  contact:
+    name: VirtualSMS Support
+    url: https://virtualsms.io
+    email: support@virtualsms.io
+  license:
+    name: Commercial — see https://virtualsms.io/terms
+servers:
+  - url: https://virtualsms.io
+    description: Production
+tags:
+  - name: Numbers
+    description: Buy, check, cancel phone-number orders
+  - name: Catalog
+    description: Browse available services and countries
+  - name: Account
+    description: Balance and account info
+  - name: Pricing
+    description: Pre-purchase price lookup (no auth required)
+security:
+  - ApiKeyAuth: []
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: API key from https://virtualsms.io → Settings → API Keys.
+  schemas:
+    Service:
+      type: object
+      required: [service_id, service_name, base_price]
+      properties:
+        service_id:
+          type: string
+          example: wa
+          description: Short service code (e.g. wa, tg, aws)
+        service_name:
+          type: string
+          example: Whatsapp
+        base_price:
+          type: number
+          format: float
+          example: 0.21
+    Country:
+      type: object
+      required: [country_id, country_name, min_price]
+      properties:
+        country_id:
+          type: string
+          example: US
+          description: ISO 2-letter country code
+        country_name:
+          type: string
+          example: United States
+        min_price:
+          type: number
+          format: float
+          example: 0.05
+        services:
+          type: array
+          items:
+            type: string
+          description: Array of service codes available in this country
+    Balance:
+      type: object
+      required: [balance, success]
+      properties:
+        balance:
+          type: number
+          format: float
+          example: 49.39
+        success:
+          type: boolean
+          example: true
+    PurchaseRequest:
+      type: object
+      required: [service, country]
+      properties:
+        service:
+          type: string
+          example: wa
+          description: Service code (use /customer/services to discover)
+        country:
+          type: string
+          example: AR
+          description: ISO 2-letter country code
+    Order:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        order_id:
+          type: string
+          format: uuid
+          example: 7e44ebb5-9a55-4bd8-a4e9-7f226f9d5ebd
+        phone_number:
+          type: string
+          example: "541127399874"
+        service:
+          type: string
+          example: wa
+        country:
+          type: string
+          example: AR
+        price:
+          type: number
+          format: float
+          example: 0.80
+        status:
+          type: string
+          enum: [waiting, completed, expired, cancelled]
+        created_at:
+          type: string
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+        cancel_available_at:
+          type: string
+          format: date-time
+        swap_available_at:
+          type: string
+          format: date-time
+        rules:
+          type: object
+          properties:
+            cancel_cooldown_seconds:
+              type: integer
+              example: 120
+            swap_cooldown_seconds:
+              type: integer
+              example: 120
+    OrderStatus:
+      allOf:
+        - $ref: '#/components/schemas/Order'
+        - type: object
+          properties:
+            sms_received:
+              type: boolean
+              description: Informational flag — can be false even when messages[] has content. Trust `status` for canonical state.
+            messages:
+              type: array
+              items:
+                type: object
+                properties:
+                  sender:
+                    type: string
+                    example: ""
+                  content:
+                    type: string
+                    example: "Your verification code is 123456"
+                  received_at:
+                    type: string
+                    format: date-time
+    CancelResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        order_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          example: cancelled
+        refund_amount:
+          type: number
+          format: float
+    OrderListResponse:
+      type: object
+      properties:
+        count:
+          type: integer
+        orders:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+              phone_number:
+                type: string
+              service_id:
+                type: string
+              country_id:
+                type: string
+              status:
+                type: string
+                enum: [waiting, completed, expired, cancelled]
+              price_charged:
+                type: number
+              created_at:
+                type: string
+                format: date-time
+              expires_at:
+                type: string
+                format: date-time
+    PriceCheckResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        service:
+          type: string
+        country:
+          type: string
+        service_name:
+          type: string
+        country_name:
+          type: string
+        price:
+          type: number
+          format: float
+        estimated:
+          type: boolean
+        error:
+          type: string
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        required:
+          type: number
+        current:
+          type: number
+paths:
+  /api/v1/customer/balance:
+    get:
+      tags: [Account]
+      summary: Get account balance
+      description: Returns the current USD balance for the authenticated account.
+      operationId: getBalance
+      responses:
+        '200':
+          description: Balance returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Balance'
+        '401':
+          description: Missing or invalid API key
+  /api/v1/customer/services:
+    get:
+      tags: [Catalog]
+      summary: List available services
+      description: Returns the full service catalog. Service IDs are short codes used as the `service` parameter in `/customer/purchase`.
+      operationId: listServices
+      responses:
+        '200':
+          description: Service catalog
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  services:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Service'
+  /api/v1/customer/countries:
+    get:
+      tags: [Catalog]
+      summary: List available countries
+      description: Returns countries with their ISO codes, minimum prices, and the list of services available in each.
+      operationId: listCountries
+      responses:
+        '200':
+          description: Country catalog
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  countries:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Country'
+  /api/v1/customer/purchase:
+    post:
+      tags: [Numbers]
+      summary: Buy a phone number
+      description: Purchases a phone number for the given service and country. Charges your account balance.
+      operationId: buyNumber
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PurchaseRequest'
+      responses:
+        '200':
+          description: Order created, phone number returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '400':
+          description: Missing or invalid country/service
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '402':
+          description: Insufficient balance (response includes `required` and `current`)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/v1/customer/order/{orderId}:
+    get:
+      tags: [Numbers]
+      summary: Get order status
+      description: Returns the current status of an order plus any received SMS messages in the `messages` array.
+      operationId: getOrderStatus
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Order status returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderStatus'
+        '404':
+          description: Order not found
+  /api/v1/customer/cancel/{orderId}:
+    post:
+      tags: [Numbers]
+      summary: Cancel an order
+      description: Cancels an order and refunds the balance. Returns HTTP 425 inside the 120-second cooldown after purchase.
+      operationId: cancelOrder
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Order cancelled, refund issued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CancelResponse'
+        '400':
+          description: Order cannot be cancelled (already cancelled, expired, etc.)
+        '425':
+          description: Too Early — cancel is locked inside the 120-second cooldown after purchase
+  /api/v1/customer/orders:
+    get:
+      tags: [Numbers]
+      summary: List recent orders
+      description: Returns a list of recent orders for the authenticated account.
+      operationId: listOrders
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+      responses:
+        '200':
+          description: Order list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderListResponse'
+  /api/v1/price:
+    get:
+      tags: [Pricing]
+      summary: Check price (no auth)
+      description: |
+        Unauthenticated price lookup. Returns the current price for a service/country combination and an availability indicator. Useful as a pre-flight check before calling /customer/purchase.
+      operationId: checkPrice
+      security: []
+      parameters:
+        - name: service
+          in: query
+          required: true
+          schema:
+            type: string
+            example: wa
+        - name: country
+          in: query
+          required: true
+          schema:
+            type: string
+            example: GB
+      responses:
+        '200':
+          description: Price returned (success may be false if combo unavailable)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PriceCheckResponse'
