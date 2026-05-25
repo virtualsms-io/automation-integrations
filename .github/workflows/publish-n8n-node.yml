@@ -37,7 +37,13 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-          registry-url: 'https://registry.npmjs.org'
+          # Deliberately NOT setting registry-url here. setup-node's
+          # registry-url writes an .npmrc with ${NODE_AUTH_TOKEN}
+          # substitution which conflicts with the OIDC Trusted Publisher
+          # flow (npm CLI sees an auth token and skips OIDC).
+
+      - name: Upgrade npm to latest (Trusted Publisher requires >= 11.5.1)
+        run: npm install -g npm@latest
 
       - name: Install workspace deps (skip native builds)
         # --ignore-scripts skips the native node-gyp build for transitive
@@ -49,6 +55,6 @@ jobs:
       - name: Build n8n-node package
         run: npm run build --workspace=n8n-nodes-virtualsms
 
-      - name: Publish to npm with provenance
+      - name: Publish to npm with provenance (via OIDC trusted publisher)
         working-directory: packages/n8n-node
         run: npm publish --provenance --access public
