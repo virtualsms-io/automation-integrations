@@ -15,6 +15,7 @@ const cancelOrder = {
         label: "Order ID",
         type: "string",
         required: true,
+        dynamic: "list_recent_orders.id.label",
         helpText: "Order UUID returned by **Buy Number**.",
       },
     ],

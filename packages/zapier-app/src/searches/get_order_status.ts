@@ -10,7 +10,13 @@ const getOrderStatus = {
   },
   operation: {
     inputFields: [
-      { key: "order_id", label: "Order ID", type: "string", required: true },
+      {
+        key: "order_id",
+        label: "Order ID",
+        type: "string",
+        required: true,
+        dynamic: "list_recent_orders.id.label",
+      },
     ],
     perform: async (z: ZObject, bundle: ZBundle) => {
       const id = String(bundle.inputData.order_id);
