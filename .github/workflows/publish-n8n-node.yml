@@ -1,0 +1,50 @@
+name: Publish n8n-nodes-virtualsms to npm
+
+# Triggers on a tag matching `n8n-v*` (e.g. n8n-v0.1.1, n8n-v0.2.0)
+# or via manual workflow dispatch from the Actions tab.
+#
+# Publishes packages/n8n-node to npm WITH PROVENANCE so the package
+# qualifies for the n8n Creator Portal verified-node badge (required
+# from May 1 2026).
+#
+# Authentication uses npm Trusted Publisher (OIDC) — no long-lived
+# NPM_TOKEN needed. Configure once at:
+#   https://www.npmjs.com/package/n8n-nodes-virtualsms/access
+#   → Publish access → Trusted Publishers → Add a publisher → GitHub Actions
+#     Repository owner: virtualsms-io
+#     Repository name:  automation-integrations
+#     Workflow name:    publish-n8n-node.yml
+#     Environment:      (leave blank)
+
+on:
+  push:
+    tags:
+      - 'n8n-v*'
+  workflow_dispatch:
+
+jobs:
+  publish:
+    name: Publish to npm with provenance
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write    # required for npm provenance via OIDC
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install workspace deps
+        run: npm ci
+
+      - name: Build n8n-node package
+        run: npm run build --workspace=n8n-nodes-virtualsms
+
+      - name: Publish to npm with provenance
+        working-directory: packages/n8n-node
+        run: npm publish --provenance --access public
