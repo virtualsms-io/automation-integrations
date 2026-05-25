@@ -1,5 +1,6 @@
 node_modules/
 dist/
+!packages/n8n-node/dist/
 build/
 *.tsbuildinfo
 
